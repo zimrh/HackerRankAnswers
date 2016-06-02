@@ -1,2 +1,2 @@
 # HackerRankAnswers
-Repo to put my HackerRank items.
+Repo to put my HackerRank items
