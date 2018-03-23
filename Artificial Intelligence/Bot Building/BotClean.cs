@@ -7,93 +7,60 @@ class Solution
     public static void next_move(int posr, int posc, String[] board)
     {
         // Check if current cell is dirty to save time splitting up the board
-        if (board[posr][posc] == DirtyCell)
+        if (board[posr][posc] == TextHelper.DirtyCell)
         {
-            Console.WriteLine(Action.Clean.ToString().ToUpper());
+            Console.WriteLine(TextHelper.Clean);
             return;
         }
 
         var botLocation = new Location() { Row = posr, Column = posc };
-
         var nearestDirtyCellLocation = GetNearestDirtyCell(board, botLocation);
 
-        var action = GetMovementAction(botLocation, nearestDirtyCellLocation);
-
-        Console.WriteLine(action.ToString().ToUpper());
+        Console.WriteLine(GetMovementAction(botLocation, nearestDirtyCellLocation));
     }
 
     private static Location GetNearestDirtyCell(string[] inputBoard, Location botLocation)
     {
-        var board = SplitBoard(inputBoard);
-        var rows = board.GetLength(0);
-        var columns = board.GetLength(1);
-        var maxRadius = rows > columns ? rows : columns;
+        var board = inputBoard;
+        var rows = board.Length;
+        var columns = board[0].Length;
+        var closestLocation = new Location();
+        double shortestDistance = rows * columns;
 
-        for (var radias = 1; radias <= maxRadius; radias++)
+        for (var r = 0; r < rows; r++)
         {
-            for (var angle = 0; angle < 360; angle++)
+            for (var c = 0; c < columns; c++)
             {
-                var l = (angle * Math.PI / 180);
-                var rowOffset = Math.Round(radias * Math.Cos(l));
-                var colOffset = Math.Round(radias * Math.Sin(l));
-                var checkRow = (int)(botLocation.Row + rowOffset);
-                var checkCol = (int)(botLocation.Column + colOffset);
-
-                if (checkRow < 0 ||
-                    checkRow >= rows ||
-                    checkCol < 0 ||
-                    checkCol >= columns)
+                if (board[r][c] != TextHelper.DirtyCell)
                 {
                     continue;
                 }
-
-                if (board[checkRow, checkCol] == DirtyCell)
+                var distance = Math.Sqrt((Math.Pow(botLocation.Column - c, 2) + Math.Pow(botLocation.Row - r, 2)));
+                if (distance >= shortestDistance)
                 {
-                    return new Location()
-                    {
-                        Row = checkRow,
-                        Column = checkCol
-                    };
+                    continue;
                 }
+                shortestDistance = distance;
+                closestLocation.Row = r;
+                closestLocation.Column = c;
             }
         }
 
-        throw new Exception("Cannot find a dirty cell!");
+        return closestLocation;
     }
 
-    private static Action GetMovementAction(Location source, Location target)
+    private static string GetMovementAction(Location source, Location target)
     {
         var rowDiff = source.Row - target.Row;
         var colDiff = source.Column - target.Column;
-
-        if (rowDiff > 0) return Action.Up;
-        if (rowDiff < 0) return Action.Down;
-        if (colDiff > 0) return Action.Left;
-        if (colDiff < 0) return Action.Right;
-        return Action.None;
+        if (rowDiff > 0) return TextHelper.Up;
+        if (rowDiff < 0) return TextHelper.Down;
+        if (colDiff > 0) return TextHelper.Left;
+        if (colDiff < 0) return TextHelper.Right;
+        return TextHelper.None;
     }
-
-    private static char[,] SplitBoard(String[] board)
-    {
-        var rows = board.Length;
-        var columns = board[0].Length;
-
-        var newBoard = new char[rows, columns];
-        for (var x = 0; x < rows; x++)
-        {
-            for (var y = 0; y < columns; y++)
-            {
-                newBoard[x, y] = board[x][y];
-            }
-        }
-        return newBoard;
-    }
-
-    private const char DirtyCell = 'd';
-    private const char EmptyCell = '-';
-    private const char BotCell = 'b';
-
-    static void Main(String[] args)
+    
+    static void Maiwn(String[] args)
     {
         String temp = Console.ReadLine();
         String[] position = temp.Split(' ');
@@ -108,14 +75,17 @@ class Solution
     }
 }
 
-public enum Action
+public static class TextHelper
 {
-    None,
-    Left,
-    Right,
-    Up,
-    Down,
-    Clean
+    public const string Left = "LEFT";
+    public const string Right = "RIGHT";
+    public const string Up = "UP";
+    public const string Down = "DOWN";
+    public const string None = "NONE";
+    public const string Clean = "CLEAN";
+    public const char DirtyCell = 'd';
+    public const char EmptyCell = '-';
+    public const char BotCell = 'b';
 }
 
 public class Location
