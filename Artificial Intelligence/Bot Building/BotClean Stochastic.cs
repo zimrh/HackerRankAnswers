@@ -4,6 +4,7 @@ using System.IO;
 
 class Solution
 {
+    // An almost exact copy of the previous solution (BotClean.cs) but instead of searching for multiple dirty cells we can stop as soon as we find one.
     public static void next_move(int posr, int posc, String[] board)
     {
         // Check if current cell is dirty to save time splitting up the board
