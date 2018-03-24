@@ -60,7 +60,7 @@ class Solution
         return TextHelper.None;
     }
     
-    static void Maiwn(String[] args)
+    static void Main(String[] args)
     {
         String temp = Console.ReadLine();
         String[] position = temp.Split(' ');
