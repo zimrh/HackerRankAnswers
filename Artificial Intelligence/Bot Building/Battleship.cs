@@ -11,24 +11,18 @@ namespace Solution
         public static void Main(string[] args)
         {
             var state = Console.ReadLine();
-            if (string.Equals(state, Helper.Init))
+            switch (state)
             {
-                foreach (var ship in GetRandomShipLayouts())
-                {
-                    Console.WriteLine(ship.GetPosition());
-                }
-                return;
-            }
+                case Helper.Init:
+                    BoardGenerator.GenerateRandomShipLayouts();
+                    break;
 
-            var gridSize = int.Parse(state ?? "0");
-            // Might as well check since we are getting this value
-            if (gridSize != Helper.GridSize)
-            {
-                throw new Exception($"{nameof(gridSize)} != {Helper.GridSize}!");
+                default:
+                    var gridSize = int.Parse(state ?? "0");
+                    var grid = ReadGrid(gridSize);
+                    Console.WriteLine(GetNextTarget(grid, gridSize));
+                    break;
             }
-
-            var grid = ReadGrid(gridSize);
-            Console.WriteLine(GetNextTarget(grid, gridSize));
         }
 
         private static Location GetNextTarget(char[,] grid, int size)
@@ -56,6 +50,7 @@ namespace Solution
                         continue;
                     }
 
+                    // two or more hits in a row
                     if (grid.GetCell(r - 1, c) == Helper.Hit ||
                         grid.GetCell(r + 1, c) == Helper.Hit)
                     {
@@ -63,7 +58,9 @@ namespace Solution
                         {
                             if (grid.GetCell(row, c) == Helper.Miss ||
                                 grid.GetCell(row, c) == Helper.Destroyed)
-                            { break; }
+                            {
+                                break;
+                            }
 
                             if (grid.GetCell(row, c) == Helper.Empty)
                             {
@@ -84,7 +81,7 @@ namespace Solution
                         }
                     }
 
-
+                    // two or more hits in a column
                     if (grid.GetCell(r, c - 1) == Helper.Hit ||
                         grid.GetCell(r, c + 1) == Helper.Hit)
                     {
@@ -115,7 +112,6 @@ namespace Solution
 
                     do
                     {
-                        // ok, lets pick a random empty cell nearby!
                         var randomDirection = rand.Next(4);
                         switch (randomDirection)
                         {
@@ -134,7 +130,6 @@ namespace Solution
                             default:
                                 if (grid.GetCell(r, c + 1) == Helper.Empty) { return new Location(r, c + 1); }
                                 break;
-
                         }
                     } while (true);
                 }
@@ -169,10 +164,12 @@ namespace Solution
             }
             return grid;
         }
+    }
 
+    public static class BoardGenerator
+    {
         #region PlacementCode
-
-        private static IEnumerable<Ship> GetRandomShipLayouts()
+        public static void GenerateRandomShipLayouts()
         {
             var grid = Helper.GenerateGrid(Helper.GridSize);
             var ships = Helper.Ships;
@@ -206,8 +203,10 @@ namespace Solution
 
                 } while (!ship.IsShipInPlace());
             }
-
-            return ships.OrderBy(s => s.Length);
+            foreach (var ship in ships.OrderBy(s => s.Length))
+            {
+                Console.WriteLine(ship.GetPosition());
+            }
         }
 
         private static void AddShipToGrid(char[,] grid, Location startPos, Location endPos)
@@ -223,7 +222,9 @@ namespace Solution
 
         private static bool IsShipGoingToFit(char[,] grid, Location startPos, Location endPos)
         {
-            if (endPos.Column >= Helper.GridSize || endPos.Row >= Helper.GridSize)
+            if (startPos.Column < 0 || startPos.Row < 0 ||
+                endPos.Column >= Helper.GridSize || 
+                endPos.Row >= Helper.GridSize)
             {
                 return false;
             }
@@ -231,7 +232,7 @@ namespace Solution
             {
                 for (var r = startPos.Row; r <= endPos.Column; r++)
                 {
-                    if (grid[r, c] == Helper.Ship) 
+                    if (grid[r, c] == Helper.Ship)
                     {
                         return false;
                     }
@@ -251,6 +252,7 @@ namespace Solution
         public const char Miss = 'm';
         public const char Hit = 'h';
         public const char Destroyed = 'd';
+
         public static readonly List<Ship> Ships = new List<Ship>()
         {
             new Ship { Length = 5 },
