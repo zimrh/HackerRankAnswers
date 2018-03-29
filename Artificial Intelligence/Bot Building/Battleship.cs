@@ -33,6 +33,8 @@ namespace Solution
 
         private static Location GetNextTarget(char[,] grid, int size)
         {
+            var rand = new Random();
+
             // Scan Grid
             for (var r = 0; r < size; r++)
             {
@@ -54,46 +56,94 @@ namespace Solution
                         continue;
                     }
 
-                    // Two Hits? Hit the opposite one! may save time if we destroy whatever is there!
-                    // If we destroy it we do not need to come back to this hit on the next iteration
-                    // I am sure this can be made cleaner btw...
-                    if (grid.GetCell(r, c - 1) == Helper.Hit &&
-                        grid.GetCell(r, c + 1) == Helper.Empty)
+                    if (grid.GetCell(r - 1, c) == Helper.Hit ||
+                        grid.GetCell(r + 1, c) == Helper.Hit)
                     {
-                        return new Location(r, c + 1);
+                        for (var row = r - 1; row >= 0; row--)
+                        {
+                            if (grid.GetCell(row, c) == Helper.Miss ||
+                                grid.GetCell(row, c) == Helper.Destroyed)
+                            { break; }
+
+                            if (grid.GetCell(row, c) == Helper.Empty)
+                            {
+                                return new Location(row, c);
+                            }
+                        }
+
+                        for (var row = r + 1; row < size; row++)
+                        {
+                            if (grid.GetCell(row, c) == Helper.Miss ||
+                                grid.GetCell(row, c) == Helper.Destroyed)
+                            { break; }
+
+                            if (grid.GetCell(row, c) == Helper.Empty)
+                            {
+                                return new Location(row, c);
+                            }
+                        }
                     }
 
-                    if (grid.GetCell(r, c + 1) == Helper.Hit &&
-                        grid.GetCell(r, c - 1) == Helper.Empty)
+
+                    if (grid.GetCell(r, c - 1) == Helper.Hit ||
+                        grid.GetCell(r, c + 1) == Helper.Hit)
                     {
-                        return new Location(r, c - 1);
+                        for (var col = c - 1; col >= 0; col--)
+                        {
+                            if (grid.GetCell(r, col) == Helper.Miss ||
+                                grid.GetCell(r, col) == Helper.Destroyed)
+                            { break; }
+
+                            if (grid.GetCell(r, col) == Helper.Empty)
+                            {
+                                return new Location(r, col);
+                            }
+                        }
+
+                        for (var col = c + 1; col < size; col++)
+                        {
+                            if (grid.GetCell(r, col) == Helper.Miss ||
+                                grid.GetCell(r, col) == Helper.Destroyed)
+                            { break; }
+
+                            if (grid.GetCell(r, col) == Helper.Empty)
+                            {
+                                return new Location(r, col);
+                            }
+                        }
                     }
 
-                    if (grid.GetCell(r + 1, c) == Helper.Hit &&
-                        grid.GetCell(r - 1, c) == Helper.Empty)
+                    do
                     {
-                        return new Location(r - 1, c);
-                    }
+                        // ok, lets pick a random empty cell nearby!
+                        var randomDirection = rand.Next(4);
+                        switch (randomDirection)
+                        {
+                            case 0:
+                                if (grid.GetCell(r - 1, c) == Helper.Empty) { return new Location(r - 1, c); }
+                                break;
 
-                    if (grid.GetCell(r - 1, c) == Helper.Hit &&
-                        grid.GetCell(r + 1, c) == Helper.Empty)
-                    {
-                        return new Location(r + 1, c);
-                    }
+                            case 1:
+                                if (grid.GetCell(r + 1, c) == Helper.Empty) { return new Location(r + 1, c); }
+                                break;
 
-                    // ok, wack the empty cells just in case!
-                    if (grid.GetCell(r - 1, c) == Helper.Empty) { return new Location(r - 1, c); }
-                    if (grid.GetCell(r + 1, c) == Helper.Empty) { return new Location(r + 1, c); }
-                    if (grid.GetCell(r, c - 1) == Helper.Empty) { return new Location(r, c - 1); }
-                    if (grid.GetCell(r, c + 1) == Helper.Empty) { return new Location(r, c + 1); }
-                    
+                            case 2:
+                                if (grid.GetCell(r, c - 1) == Helper.Empty) { return new Location(r, c - 1); }
+                                break;
+
+                            default:
+                                if (grid.GetCell(r, c + 1) == Helper.Empty) { return new Location(r, c + 1); }
+                                break;
+
+                        }
+                    } while (true);
                 }
             }
 
             // Checked entire grid, no existing hits found, pick a random spot and FIRE!
             // Interesting: If the smallest ship was Length 2 we could checker our random hits to reduce the number of hits
             // we need to do (i.e. like a chess board) but the sub is Length 1 so random it is!
-            var rand = new Random();
+
             do
             {
                 var targetRow = rand.Next(size);
@@ -133,18 +183,26 @@ namespace Solution
                 do
                 {
                     var randGen = new Random();
-                    var rp1 = randGen.Next(Helper.GridSize);
-                    var cp1 = randGen.Next(Helper.GridSize);
+                    var startPos = new Location()
+                    {
+                        Row = randGen.Next(Helper.GridSize),
+                        Column = randGen.Next(Helper.GridSize)
+                    };
+
                     var direction = randGen.Next(2);
 
-                    // 0 = right, 1 = down
-                    var rp2 = (direction == 1) ? rp1 : rp1 + ship.Length - 1;
-                    var cp2 = (direction == 1) ? cp1 + ship.Length - 1 : cp1;
+                    // 0 = right or 1 = down
+                    var endPos = new Location()
+                    {
+                        Row = (direction == 1) ? startPos.Row : startPos.Row + ship.Length - 1,
+                        Column = (direction == 1) ? startPos.Column + ship.Length - 1 : startPos.Column
+                    };
 
-                    if (!IsShipGoingToFit(grid, cp1, rp1, cp2, rp2)) { continue; }
+                    if (!IsShipGoingToFit(grid, startPos, endPos)) { continue; }
 
-                    AddShipToGrid(grid, cp1, rp1, cp2, rp2);
-                    ship.Positions = new[] { cp1, rp1, cp2, rp2 };
+                    AddShipToGrid(grid, startPos, endPos);
+                    ship.StartPosition = startPos;
+                    ship.EndPosition = endPos;
 
                 } while (!ship.IsShipInPlace());
             }
@@ -152,28 +210,28 @@ namespace Solution
             return ships.OrderBy(s => s.Length);
         }
 
-        private static void AddShipToGrid(char[,] grid, int cp1, int rp1, int cp2, int rp2)
+        private static void AddShipToGrid(char[,] grid, Location startPos, Location endPos)
         {
-            for (var c = cp1; c <= cp2; c++)
+            for (var c = startPos.Column; c <= endPos.Column; c++)
             {
-                for (var r = rp1; r <= rp2; r++)
+                for (var r = startPos.Row; r <= endPos.Row; r++)
                 {
                     grid[r, c] = Helper.Ship;
                 }
             }
         }
 
-        private static bool IsShipGoingToFit(char[,] grid, int cp1, int rp1, int cp2, int rp2)
+        private static bool IsShipGoingToFit(char[,] grid, Location startPos, Location endPos)
         {
-            if (cp2 >= Helper.GridSize || rp2 >= Helper.GridSize)
+            if (endPos.Column >= Helper.GridSize || endPos.Row >= Helper.GridSize)
             {
                 return false;
             }
-            for (var c = cp1; c <= cp2; c++)
+            for (var c = startPos.Column; c <= endPos.Column; c++)
             {
-                for (var r = rp1; r <= rp2; r++)
+                for (var r = startPos.Row; r <= endPos.Column; r++)
                 {
-                    if (grid[r, c] == Helper.Ship)
+                    if (grid[r, c] == Helper.Ship) 
                     {
                         return false;
                     }
@@ -193,7 +251,6 @@ namespace Solution
         public const char Miss = 'm';
         public const char Hit = 'h';
         public const char Destroyed = 'd';
-
         public static readonly List<Ship> Ships = new List<Ship>()
         {
             new Ship { Length = 5 },
@@ -216,13 +273,11 @@ namespace Solution
         {
             var rows = grid.GetLength(0);
             var cols = grid.GetLength(1);
-
             // Out of bounds, assume it is a miss
             if (row < 0 || row >= rows || col < 0 || col >= cols)
             {
                 return Helper.Miss;
             }
-
             return grid[row, col];
         }
     }
@@ -230,14 +285,15 @@ namespace Solution
     public class Location
     {
         public Location() { }
-
         public Location(int row, int col)
         {
             Row = row;
             Column = col;
         }
-        public int Row { get; set; }
-        public int Column { get; set; }
+
+        public int Row { get; set; } = -1;
+        public int Column { get; set; } = -1;
+        public bool HasLocationBeenSet => Row != -1 && Column != -1;
         public override string ToString()
         {
             return $"{Row} {Column}";
@@ -247,14 +303,15 @@ namespace Solution
     public class Ship
     {
         public int Length { get; set; }
-        public int[] Positions { get; set; } = { -1, -1, -1, -1 };
-        public bool IsShipInPlace() => Positions.All(p => p != -1);
-
+        public Location StartPosition { get; set; } = new Location();
+        public Location EndPosition { get; set; } = new Location();
+        public bool IsShipInPlace() => StartPosition.HasLocationBeenSet && EndPosition.HasLocationBeenSet;
         public string GetPosition()
         {
-            return (Positions[0] == Positions[2] && Positions[1] == Positions[3])
-                ? $"{Positions[0]} {Positions[1]}"
-                : $"{Positions[0]} {Positions[1]}:{Positions[2]} {Positions[3]}";
+            return (StartPosition.Row == EndPosition.Row &&
+                    StartPosition.Column == EndPosition.Column)
+                ? $"{StartPosition.Row} {StartPosition.Column}"
+                : $"{StartPosition.Row} {StartPosition.Column}:{EndPosition.Row} {EndPosition.Column}";
         }
     }
 }
