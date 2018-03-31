@@ -7,19 +7,23 @@ namespace Solution
 {
     public static class Solution
     {
-        private static void MiniMaxSum(int[] arr)
+        // Turns out .Sum() cannot handle the size of the integers, Aggregate
+        // would work fine but thinking about this I decided that it would be 
+        // better to just iterate a single time over the array so changed it 
+        // to a foreach and picked the smallest and largest values to use to return the answer
+        private static void MiniMaxSum(IEnumerable<int> arr)
         {
-            long total = arr.Sum();
-            var smallestValue = long.MaxValue;
-            var largestValue = long.MinValue;
+            long total = 0;
+            var smallestInput = int.MaxValue;
+            var largestInput = int.MinValue;
 
-            foreach (var integer in arr)
+            foreach (var i in arr)
             {
-                var value = total - integer;
-                smallestValue = (value < smallestValue) ? value : smallestValue;
-                largestValue = (value > largestValue) ? value : largestValue;
+                total += i;
+                smallestInput = (i < smallestInput) ? i : smallestInput;
+                largestInput = (i > largestInput) ? i : largestInput;
             }
-            Console.WriteLine($"{smallestValue} {largestValue}");
+            Console.WriteLine($"{total - largestInput} {total - smallestInput}");
         }
 
         public static void Main(string[] args)
